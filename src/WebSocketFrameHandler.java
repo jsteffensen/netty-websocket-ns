@@ -21,41 +21,37 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.group.ChannelGroup;
+import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
+import io.netty.util.concurrent.GlobalEventExecutor;
 
 /**
  * Echoes uppercase content of text frames.
  */
 public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocketFrame> {
 
-	private ChannelGroup allChannels;
+	static final ChannelGroup channels = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
 
-    public WebSocketFrameHandler(ChannelGroup allChannels) {
-    	this.allChannels = allChannels;
-	}
+    @Override
+    public void channelActive(final ChannelHandlerContext ctx) {
+    	channels.add(ctx.channel());
+    }
 
-	@Override
+
+    @Override
     protected void channelRead0(ChannelHandlerContext ctx, WebSocketFrame frame) throws Exception {
-        // ping and pong frames already handled
 
         if (frame instanceof TextWebSocketFrame) {
-            // Send the uppercase string back.
-            String request = ((TextWebSocketFrame) frame).text();
 
-            for (Channel ch : allChannels) {
+        	String request = ((TextWebSocketFrame) frame).text();
+            for (Channel ch : channels) {
                 ch.writeAndFlush(new TextWebSocketFrame(request.toUpperCase(Locale.US)));
             }
-            //ctx.channel().writeAndFlush(new TextWebSocketFrame(request.toUpperCase(Locale.US)));
 
         } else {
             String message = "unsupported frame type: " + frame.getClass().getName();
             throw new UnsupportedOperationException(message);
         }
-    }
-
-    @Override
-    public void channelActive(ChannelHandlerContext ctx) {
-    	allChannels.add(ctx.channel());
     }
 }

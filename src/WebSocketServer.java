@@ -18,8 +18,6 @@
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.group.ChannelGroup;
-import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LogLevel;
@@ -27,7 +25,6 @@ import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
-import io.netty.util.concurrent.GlobalEventExecutor;
 
 /**
  * A HTTP server which serves Web Socket requests at:
@@ -56,10 +53,6 @@ public final class WebSocketServer {
     public static void main(String[] args) throws Exception {
         // Configure SSL.
         final SslContext sslCtx;
-
-        ChannelGroup allChannels =
-                new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
-
         if (SSL) {
             SelfSignedCertificate ssc = new SelfSignedCertificate();
             sslCtx = SslContextBuilder.forServer(ssc.certificate(), ssc.privateKey()).build();
@@ -69,17 +62,14 @@ public final class WebSocketServer {
 
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);
         EventLoopGroup workerGroup = new NioEventLoopGroup();
-
-
         try {
             ServerBootstrap b = new ServerBootstrap();
             b.group(bossGroup, workerGroup)
              .channel(NioServerSocketChannel.class)
              .handler(new LoggingHandler(LogLevel.INFO))
-             .childHandler(new WebSocketServerInitializer(sslCtx, allChannels));
+             .childHandler(new WebSocketServerInitializer(sslCtx));
 
             Channel ch = b.bind(PORT).sync().channel();
-            allChannels.add(ch);
 
             System.out.println("Open your web browser and navigate to " +
                     (SSL? "https" : "http") + "://127.0.0.1:" + PORT + '/');
