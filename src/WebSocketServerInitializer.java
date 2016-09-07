@@ -49,4 +49,5 @@ public class WebSocketServerInitializer extends ChannelInitializer<SocketChannel
         pipeline.addLast(new WebSocketIndexPageHandler(WEBSOCKET_PATH));
         pipeline.addLast(new WebSocketFrameHandler());
     }
+
 }

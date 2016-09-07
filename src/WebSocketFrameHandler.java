@@ -17,6 +17,7 @@
 
 import java.util.Locale;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
@@ -35,10 +36,21 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocket
             // Send the uppercase string back.
             String request = ((TextWebSocketFrame) frame).text();
 
-            ctx.channel().writeAndFlush(new TextWebSocketFrame(request.toUpperCase(Locale.US)));
+            for (Channel ch : WebSocketServer.allChannels) {
+                ch.writeAndFlush(new TextWebSocketFrame(request.toUpperCase(Locale.US)));
+            }
+            //ctx.channel().writeAndFlush(new TextWebSocketFrame(request.toUpperCase(Locale.US)));
+
         } else {
             String message = "unsupported frame type: " + frame.getClass().getName();
             throw new UnsupportedOperationException(message);
         }
+    }
+
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) {
+        // closed on shutdown.
+    	WebSocketServer.allChannels.add(ctx.channel());
+        //super.channelActive(ctx);
     }
 }
