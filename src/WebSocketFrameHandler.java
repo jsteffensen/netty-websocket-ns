@@ -20,6 +20,7 @@ import java.util.Locale;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.group.ChannelGroup;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 
@@ -28,7 +29,13 @@ import io.netty.handler.codec.http.websocketx.WebSocketFrame;
  */
 public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocketFrame> {
 
-    @Override
+	private ChannelGroup allChannels;
+
+    public WebSocketFrameHandler(ChannelGroup allChannels) {
+    	this.allChannels = allChannels;
+	}
+
+	@Override
     protected void channelRead0(ChannelHandlerContext ctx, WebSocketFrame frame) throws Exception {
         // ping and pong frames already handled
 
@@ -36,7 +43,7 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocket
             // Send the uppercase string back.
             String request = ((TextWebSocketFrame) frame).text();
 
-            for (Channel ch : WebSocketServer.allChannels) {
+            for (Channel ch : allChannels) {
                 ch.writeAndFlush(new TextWebSocketFrame(request.toUpperCase(Locale.US)));
             }
             //ctx.channel().writeAndFlush(new TextWebSocketFrame(request.toUpperCase(Locale.US)));
@@ -49,8 +56,6 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocket
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
-        // closed on shutdown.
-    	WebSocketServer.allChannels.add(ctx.channel());
-        //super.channelActive(ctx);
+    	allChannels.add(ctx.channel());
     }
 }

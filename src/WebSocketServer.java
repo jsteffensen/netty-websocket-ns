@@ -53,12 +53,13 @@ public final class WebSocketServer {
     static final boolean SSL = System.getProperty("ssl") != null;
     static final int PORT = Integer.parseInt(System.getProperty("port", SSL? "8443" : "8080"));
 
-    static ChannelGroup allChannels =
-            new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
-
     public static void main(String[] args) throws Exception {
         // Configure SSL.
         final SslContext sslCtx;
+
+        ChannelGroup allChannels =
+                new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
+
         if (SSL) {
             SelfSignedCertificate ssc = new SelfSignedCertificate();
             sslCtx = SslContextBuilder.forServer(ssc.certificate(), ssc.privateKey()).build();
@@ -75,7 +76,7 @@ public final class WebSocketServer {
             b.group(bossGroup, workerGroup)
              .channel(NioServerSocketChannel.class)
              .handler(new LoggingHandler(LogLevel.INFO))
-             .childHandler(new WebSocketServerInitializer(sslCtx));
+             .childHandler(new WebSocketServerInitializer(sslCtx, allChannels));
 
             Channel ch = b.bind(PORT).sync().channel();
             allChannels.add(ch);
