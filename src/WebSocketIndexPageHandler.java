@@ -15,39 +15,27 @@
  */
 
 
+import static io.netty.handler.codec.http.HttpMethod.GET;
+import static io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
+import static io.netty.handler.codec.http.HttpResponseStatus.FORBIDDEN;
+import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPipeline;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
-import io.netty.handler.codec.http.HttpHeaderNames;
-import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpUtil;
-import io.netty.handler.ssl.SslHandler;
 import io.netty.util.CharsetUtil;
-
-import static io.netty.handler.codec.http.HttpMethod.GET;
-import static io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
-import static io.netty.handler.codec.http.HttpResponseStatus.FORBIDDEN;
-import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
-import static io.netty.handler.codec.http.HttpResponseStatus.OK;
-import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 /**
  * Outputs index page content.
  */
 public class WebSocketIndexPageHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
-
-    private final String websocketPath;
-
-    public WebSocketIndexPageHandler(String websocketPath) {
-        this.websocketPath = websocketPath;
-    }
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest req) throws Exception {
@@ -65,16 +53,8 @@ public class WebSocketIndexPageHandler extends SimpleChannelInboundHandler<FullH
 
         // Send the index page
         if ("/".equals(req.uri()) || "/index.html".equals(req.uri())) {
-            String webSocketLocation = getWebSocketLocation(ctx.pipeline(), req, websocketPath);
-            ByteBuf content = WebSocketServerIndexPage.getContent(webSocketLocation);
-            FullHttpResponse res = new DefaultFullHttpResponse(HTTP_1_1, OK, content);
-
-            res.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/html; charset=UTF-8");
-            HttpUtil.setContentLength(res, content.readableBytes());
-
-            sendHttpResponse(ctx, req, res);
-        } else {
-            sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, NOT_FOUND));
+        	sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, FORBIDDEN));
+            return;
         }
     }
 
@@ -100,12 +80,4 @@ public class WebSocketIndexPageHandler extends SimpleChannelInboundHandler<FullH
         }
     }
 
-    private static String getWebSocketLocation(ChannelPipeline cp, HttpRequest req, String path) {
-        String protocol = "ws";
-        if (cp.get(SslHandler.class) != null) {
-            // SSL in use so use Secure WebSockets
-            protocol = "wss";
-        }
-        return protocol + "://" + req.headers().get(HttpHeaderNames.HOST) + path;
-    }
 }
